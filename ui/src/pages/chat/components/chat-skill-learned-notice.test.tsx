@@ -61,8 +61,15 @@ describe("skill review notice", () => {
       expect(element.querySelector("[role='alert']")?.textContent).toContain("Learning is off."),
     );
     expect(undoButton(element)?.disabled).toBe(false);
-    request.mockReturnValueOnce(Promise.resolve({ status: "undone", changes: [] }));
-    undoButton(element)?.click();
+    const retry = createDeferred<{ status: "undone"; changes: [] }>();
+    request.mockReturnValueOnce(retry.promise);
+    const button = undoButton(element)!;
+    button.click();
+    await waitForSolid(() => expect(button.disabled).toBe(true));
+    expect(undoButton(element)).toBe(button);
+    expect(element.querySelector("[role='alert']")).toBeNull();
+    expect(element.textContent).toContain("Undoing");
+    retry.resolve({ status: "undone", changes: [] });
     await waitForSolid(() => expect(element.textContent).toContain("Undone"));
   });
 
