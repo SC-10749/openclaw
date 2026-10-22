@@ -44,7 +44,6 @@ import {
 import {
   resolveDefaultTelegramAccountId,
   resolveTelegramAccount,
-  resolveTelegramAccountConfig,
   type ResolvedTelegramAccount,
 } from "./accounts.js";
 import { resolveTelegramAutoThreadId } from "./action-threading.js";
@@ -737,10 +736,8 @@ export const telegramPlugin = createChatChannelPlugin({
         }
         return lines;
       },
-      auditAccount: async ({ account, timeoutMs, probe, cfg }) => {
-        const groups =
-          resolveTelegramAccountConfig(cfg, account.accountId)?.groups ??
-          cfg.channels?.telegram?.groups;
+      auditAccount: async ({ account, timeoutMs, probe }) => {
+        const groups = account.config.groups;
         const collectGroupIds =
           getOptionalTelegramRuntime()?.channel?.telegram?.collectTelegramUnmentionedGroupIds ??
           auditModule.collectTelegramUnmentionedGroupIds;
