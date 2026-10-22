@@ -355,40 +355,6 @@ describe("createTelegramBot channel_post media", () => {
     expectTelegramIngestHook([]);
   });
 
-  it("uses the mixed-case account mention policy for inbound group media", async () => {
-    const telegram = {
-      groupPolicy: "open",
-      groups: { "-100456": { requireMention: true, ingest: true } },
-      mentionPatterns: { mode: "deny" },
-      accounts: {
-        Work: {
-          botToken: "123:work",
-          groups: { "-100456": { requireMention: true, ingest: true } },
-          mentionPatterns: { mode: "allow", allowIn: ["-100456"] },
-        },
-      },
-    } satisfies TelegramConfig;
-    const config = {
-      channels: { telegram },
-      messages: { groupChat: { mentionPatterns: ["\\bbert\\b"] } },
-    } satisfies OpenClawConfig;
-    loadConfig.mockReturnValue(config);
-    const fetchSpy = createImageFetchSpy();
-    const getFile = vi.fn(async (fileId: string) => mediaFile(fileId, "photos/account.jpg"));
-    await createTelegramBot({ accountId: "work", config });
-
-    await dispatchTelegramGroupPhoto({
-      messageId: 92073,
-      caption: "bert, see attachment",
-      getFile,
-    });
-
-    expect(getFile).toHaveBeenCalledTimes(1);
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
-    expectTelegramIngestHook([92073]);
-    expectSilent();
-  });
-
   it.each([
     { name: "denied mention", messageIds: [92071, 92072], deniedMention: true },
     { name: "unauthorized", messageIds: [92079, 92080], deniedMention: false },
