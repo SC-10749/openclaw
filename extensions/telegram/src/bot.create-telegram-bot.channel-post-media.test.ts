@@ -363,6 +363,7 @@ describe("createTelegramBot channel_post media", () => {
       accounts: {
         Work: {
           botToken: "123:work",
+          groups: { "-100456": { requireMention: true, ingest: true } },
           mentionPatterns: { mode: "allow", allowIn: ["-100456"] },
         },
       },
