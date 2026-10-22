@@ -356,21 +356,25 @@ describe("createTelegramBot channel_post media", () => {
   });
 
   it("uses the mixed-case account mention policy for inbound group media", async () => {
-    setTelegramIngestGroupConfig(
-      {
-        mentionPatterns: { mode: "deny" },
-        accounts: {
-          Work: {
-            botToken: "123:work",
-            mentionPatterns: { mode: "allow", allowIn: ["-100456"] },
-          },
+    const telegram = {
+      groupPolicy: "open",
+      groups: { "-100456": { requireMention: true, ingest: true } },
+      mentionPatterns: { mode: "deny" },
+      accounts: {
+        Work: {
+          botToken: "123:work",
+          mentionPatterns: { mode: "allow", allowIn: ["-100456"] },
         },
       },
-      true,
-    );
+    } satisfies TelegramConfig;
+    const config = {
+      channels: { telegram },
+      messages: { groupChat: { mentionPatterns: ["\\bbert\\b"] } },
+    } satisfies OpenClawConfig;
+    loadConfig.mockReturnValue(config);
     const fetchSpy = createImageFetchSpy();
     const getFile = vi.fn(async (fileId: string) => mediaFile(fileId, "photos/account.jpg"));
-    await createTelegramBot({ accountId: "work" });
+    await createTelegramBot({ accountId: "work", config });
 
     await dispatchTelegramGroupPhoto({
       messageId: 92073,
