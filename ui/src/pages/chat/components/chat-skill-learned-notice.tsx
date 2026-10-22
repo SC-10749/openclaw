@@ -74,6 +74,9 @@ export function ChatSkillLearnedNotice(props: { notice?: SkillWorkshopChangeNoti
             }
           });
           const undo = () => {
+            if (inFlight) {
+              return;
+            }
             const result = runUndo();
             // The keyed notice may retire before its error slot observes this attempt.
             void result.catch(() => {});
