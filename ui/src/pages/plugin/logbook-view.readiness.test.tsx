@@ -6,6 +6,7 @@ import { flush, waitForSolid } from "../../test-helpers/solid-settle.ts";
 import { localDayKey } from "./logbook-state.ts";
 import type { LogbookTimelinePayload } from "./logbook-types.ts";
 import { Logbook } from "./logbook-view.tsx";
+import { logbookTimeline } from "./logbook.test-support.ts";
 
 const day = localDayKey();
 const neverRetired = new Promise<void>(() => {});
@@ -28,6 +29,57 @@ const empty: LogbookTimelinePayload = {
   stats: { trackedMs: 0, distractionMs: 0, categories: [], apps: [] },
 };
 afterEach(cleanupSolid);
+
+it("shares pending keyframes and leaves pruned frames absent after reopening", async () => {
+  const frame = createDeferred<{ format: string; base64: string }>();
+  const timeline = logbookTimeline(day, [
+    { id: 1, title: "First card", keyframeId: 42 },
+    { id: 2, title: "Shared frame", keyframeId: 42 },
+    { id: 3, title: "Pruned frame", keyframeId: 99 },
+  ]);
+  const frameRequest = vi.fn((params: unknown) =>
+    (params as { frameId: number }).frameId === 42
+      ? frame.promise
+      : Promise.reject(new Error("Frame pruned")),
+  );
+  const request = (method: string, params: unknown) => {
+    if (method === "logbook.status") {
+      return status;
+    }
+    return method === "logbook.frame" ? frameRequest(params) : timeline;
+  };
+  const view = mountSolid(() => (
+    <Logbook initialClient={createTestGatewayClient(request)} getRetired={() => neverRetired} />
+  ));
+  await waitForSolid(() =>
+    expect(view.container.querySelectorAll(".logbook-card__header")).toHaveLength(3),
+  );
+  const headers = view.container.querySelectorAll<HTMLButtonElement>(".logbook-card__header");
+  headers[0]!.click();
+  headers[1]!.click();
+  await waitForSolid(() =>
+    expect(view.container.querySelectorAll(".logbook-card__keyframe--loading")).toHaveLength(2),
+  );
+  expect(frameRequest).toHaveBeenCalledTimes(1);
+  frame.resolve({ format: "png", base64: "synthetic-preview" });
+  await waitForSolid(() =>
+    expect(view.container.querySelectorAll("img.logbook-card__keyframe")).toHaveLength(2),
+  );
+  expect(view.container.querySelectorAll(".logbook-card__keyframe--loading")).toHaveLength(0);
+
+  headers[2]!.click();
+  await waitForSolid(() => expect(frameRequest).toHaveBeenCalledTimes(2));
+  await waitForSolid(() =>
+    expect(view.container.querySelectorAll(".logbook-card__keyframe--loading")).toHaveLength(0),
+  );
+  headers[2]!.click();
+  flush();
+  headers[2]!.click();
+  flush();
+  expect(frameRequest).toHaveBeenCalledTimes(2);
+  expect(view.container.querySelectorAll("img.logbook-card__keyframe")).toHaveLength(2);
+  expect(view.queryByRole("alert")).toBeNull();
+});
 
 it("keeps the side editor usable while a delayed timeline fails and retries", async () => {
   const pending = createDeferred<LogbookTimelinePayload>();
