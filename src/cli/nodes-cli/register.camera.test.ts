@@ -230,5 +230,4 @@ describe("nodes camera snap CLI option forwarding", () => {
     expect(output).not.toContain("\u0007");
     expect(output).toMatch(/frontcam\s.*back\s.*dev-1/u);
   });
-
 });
