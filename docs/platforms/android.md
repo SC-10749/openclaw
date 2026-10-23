@@ -514,6 +514,17 @@ notifications. See [Reactions](/concepts/multi-user#reactions).
 
 #### Agent browser in chat
 
+#### Dashboard
+
+Open **Chat actions (⋮) > Dashboard** to show the current session's Control UI
+dashboard in an embedded WebView. This requires a connected Gateway and reuses
+the app's operator connection, so no separate sign-in is needed. If the Gateway
+is offline, the screen explains the connection requirement instead of loading.
+
+The dashboard is the same embedded Control UI board described in
+[Session dashboards](/web/dashboard-architecture); older Gateways without a
+bundled Control UI show an unavailable notice.
+
 When the Browser plugin returns an identifiable tab, Chat shows a preview of
 the session's latest browser tab under **Agent browser**. Tap the upward chevron
 to interact without leaving the conversation or replacing your draft. The
