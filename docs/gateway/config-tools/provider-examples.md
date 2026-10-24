@@ -264,7 +264,7 @@ You can represent those routes as two custom providers without changing the runt
    Keep the same authentication, API transport, model id, capabilities, context limits, and token limits unless the gateway actually differs.
 2. Use the interactive provider as the default model and the background provider as the sub-agent model.
 3. Copy the exact model's generation settings to the second fully qualified model key.
-   Give the interactive entry the picker alias; omit the alias on the background entry so the same model is not shown twice.
+   Give the interactive entry the picker alias and omit it on the background entry to avoid assigning the same shortcut name to both routes. Both provider-qualified model entries can still appear separately in model pickers.
 
 ```json5
 {
