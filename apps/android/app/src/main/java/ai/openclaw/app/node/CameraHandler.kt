@@ -19,6 +19,21 @@ private const val CAMERA_DEBUG_STACK_TRACE_MAX_CHARS = 2_000
  */
 internal fun isCameraClipWithinPayloadLimit(rawBytes: Long): Boolean = rawBytes in 1L..CAMERA_CLIP_MAX_RAW_BYTES
 
+internal fun cameraClipPayloadError(rawBytes: Long): GatewaySession.InvokeResult? =
+  when {
+    rawBytes == 0L ->
+      nodeInvokeError(
+        "CAMERA_CAPTURE_FAILED",
+        "camera clip produced an empty file; retry the capture",
+      )
+    rawBytes > CAMERA_CLIP_MAX_RAW_BYTES ->
+      nodeInvokeError(
+        "PAYLOAD_TOO_LARGE",
+        "camera clip is $rawBytes bytes; max is $CAMERA_CLIP_MAX_RAW_BYTES bytes. Reduce durationMs and retry.",
+      )
+    else -> null
+  }
+
 /** Gateway camera commands with payload-size enforcement and audio ownership. */
 class CameraHandler(
   private val appContext: Context,
@@ -90,12 +105,9 @@ class CameraHandler(
           return GatewaySession.InvokeResult.error(code = code, message = message)
         }
       val rawBytes = filePayload.file.length()
-      if (!isCameraClipWithinPayloadLimit(rawBytes)) {
-        clipLog("payload too large: bytes=$rawBytes max=$CAMERA_CLIP_MAX_RAW_BYTES")
-        return nodeInvokeError(
-          "PAYLOAD_TOO_LARGE",
-          "camera clip is $rawBytes bytes; max is $CAMERA_CLIP_MAX_RAW_BYTES bytes. Reduce durationMs and retry.",
-        )
+      cameraClipPayloadError(rawBytes)?.let { error ->
+        clipLog("invalid clip payload: bytes=$rawBytes max=$CAMERA_CLIP_MAX_RAW_BYTES")
+        return error
       }
 
       val bytes = withContext(Dispatchers.IO) { filePayload.file.readBytes() }

@@ -130,6 +130,16 @@ class CameraHandlerTest {
   }
 
   @Test
+  fun cameraClipPayloadError_reportsEmptyCaptureSeparatelyFromOversizedPayload() {
+    val empty = cameraClipPayloadError(0L)
+    assertEquals("CAMERA_CAPTURE_FAILED", empty?.error?.code)
+    assertEquals("camera clip produced an empty file; retry the capture", empty?.error?.message)
+
+    val oversized = cameraClipPayloadError(CAMERA_CLIP_MAX_RAW_BYTES + 1L)
+    assertEquals("PAYLOAD_TOO_LARGE", oversized?.error?.code)
+  }
+
+  @Test
   fun isCameraClipWithinPayloadLimit_rejectsNegativeAndTooLarge() {
     assertFalse(isCameraClipWithinPayloadLimit(-1L))
     assertFalse(isCameraClipWithinPayloadLimit(CAMERA_CLIP_MAX_RAW_BYTES + 1L))
