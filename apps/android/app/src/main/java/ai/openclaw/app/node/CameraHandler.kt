@@ -21,17 +21,23 @@ internal fun isCameraClipWithinPayloadLimit(rawBytes: Long): Boolean = rawBytes 
 
 internal fun cameraClipPayloadError(rawBytes: Long): GatewaySession.InvokeResult? =
   when {
-    rawBytes == 0L ->
+    rawBytes == 0L -> {
       nodeInvokeError(
         "CAMERA_CAPTURE_FAILED",
         "camera clip produced an empty file; retry the capture",
       )
-    rawBytes > CAMERA_CLIP_MAX_RAW_BYTES ->
+    }
+
+    rawBytes > CAMERA_CLIP_MAX_RAW_BYTES -> {
       nodeInvokeError(
         "PAYLOAD_TOO_LARGE",
         "camera clip is $rawBytes bytes; max is $CAMERA_CLIP_MAX_RAW_BYTES bytes. Reduce durationMs and retry.",
       )
-    else -> null
+    }
+
+    else -> {
+      null
+    }
   }
 
 /** Gateway camera commands with payload-size enforcement and audio ownership. */
