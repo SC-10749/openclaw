@@ -124,8 +124,8 @@ class CameraHandlerTest {
     }
 
   @Test
-  fun isCameraClipWithinPayloadLimit_allowsZeroAndLimit() {
-    assertTrue(isCameraClipWithinPayloadLimit(0L))
+  fun isCameraClipWithinPayloadLimit_allowsPositiveBytesAndLimit() {
+    assertFalse(isCameraClipWithinPayloadLimit(0L))
     assertTrue(isCameraClipWithinPayloadLimit(CAMERA_CLIP_MAX_RAW_BYTES))
   }
 
