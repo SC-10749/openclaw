@@ -124,12 +124,6 @@ class CameraHandlerTest {
     }
 
   @Test
-  fun isCameraClipWithinPayloadLimit_allowsPositiveBytesAndLimit() {
-    assertFalse(isCameraClipWithinPayloadLimit(0L))
-    assertTrue(isCameraClipWithinPayloadLimit(CAMERA_CLIP_MAX_RAW_BYTES))
-  }
-
-  @Test
   fun cameraClipPayloadError_reportsEmptyCaptureSeparatelyFromOversizedPayload() {
     val empty = cameraClipPayloadError(0L)
     assertEquals("CAMERA_CAPTURE_FAILED", empty?.error?.code)
@@ -143,9 +137,9 @@ class CameraHandlerTest {
   }
 
   @Test
-  fun isCameraClipWithinPayloadLimit_rejectsNegativeAndTooLarge() {
-    assertFalse(isCameraClipWithinPayloadLimit(-1L))
-    assertFalse(isCameraClipWithinPayloadLimit(CAMERA_CLIP_MAX_RAW_BYTES + 1L))
+  fun cameraClipPayloadError_acceptsPositiveBytesAndExactLimit() {
+    assertNull(cameraClipPayloadError(1L))
+    assertNull(cameraClipPayloadError(CAMERA_CLIP_MAX_RAW_BYTES))
   }
 
   @Test

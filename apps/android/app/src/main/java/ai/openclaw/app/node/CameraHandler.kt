@@ -14,11 +14,6 @@ import java.util.concurrent.atomic.AtomicReference
 internal const val CAMERA_CLIP_MAX_RAW_BYTES: Long = 18L * 1024L * 1024L
 private const val CAMERA_DEBUG_STACK_TRACE_MAX_CHARS = 2_000
 
-/**
- * Raw MP4 size guard before base64 encoding the clip into a node.invoke response.
- */
-internal fun isCameraClipWithinPayloadLimit(rawBytes: Long): Boolean = rawBytes in 1L..CAMERA_CLIP_MAX_RAW_BYTES
-
 internal fun cameraClipPayloadError(rawBytes: Long): GatewaySession.InvokeResult? =
   when {
     rawBytes == 0L -> {
