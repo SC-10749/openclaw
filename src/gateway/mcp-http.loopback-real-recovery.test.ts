@@ -33,6 +33,7 @@ import { closeMcpLoopbackServer, ensureMcpLoopbackServer } from "./mcp-http.js";
 import { getActiveMcpLoopbackRuntime } from "./mcp-http.loopback-runtime.js";
 
 const completed = { content: [{ type: "text", text: "real loopback recovery" }] };
+const admissions: Array<ReturnType<typeof mcp.prepareAdmission>> = [];
 
 beforeEach(() => {
   execute.mockReset().mockResolvedValue(completed);
@@ -41,6 +42,7 @@ beforeEach(() => {
 
 afterEach(async () => {
   await closeMcpLoopbackServer();
+  admissions.splice(0).forEach((admission) => admission.close());
   createdServers.length = 0;
 });
 
@@ -48,9 +50,21 @@ it("recovers a real MCP request after the listener closes unexpectedly", async (
   await ensureMcpLoopbackServer();
   const oldRuntime = expectDefined(getActiveMcpLoopbackRuntime(), "old MCP runtime");
   const oldServer = expectDefined(createdServers.at(-1), "old MCP server");
+  const admission = mcp.prepareAdmission("mcp-recovery-proof", "mcp-recovery-proof");
+  admissions.push(admission);
+  const admittedRunContext = await admission.admit("gateway", "gateway-mcp-recovery-proof");
+  const oldGrant = mcp.captureGrant(
+    {
+      context: { sessionKey: "agent:main:mcp-recovery-proof", senderIsOwner: true },
+      runtimeOwnerToken: oldRuntime.ownerToken,
+      admittedRunContext,
+      toolPolicyConfig: {},
+    },
+    "mcp-recovery-proof-capture",
+  );
 
   expect(
-    await mcp.json(await mcp.request(oldRuntime, mcp.toolCall("recovery_probe"))),
+    await mcp.json(await mcp.request(oldRuntime, mcp.toolCall("recovery_probe"), oldGrant)),
   ).toMatchObject({ result: { ...completed, isError: false } });
 
   const closed = once(oldServer, "close");
@@ -63,6 +77,14 @@ it("recovers a real MCP request after the listener closes unexpectedly", async (
   const newServer = expectDefined(createdServers.at(-1), "new MCP server");
   expect(newRuntime.ownerToken).not.toBe(oldRuntime.ownerToken);
   expect(newServer).not.toBe(oldServer);
+
+  const retiredGrantResponse = await mcp.request(
+    newRuntime,
+    mcp.toolCall("recovery_probe"),
+    oldGrant,
+  );
+  expect(retiredGrantResponse.status).toBe(401);
+  expect(execute).toHaveBeenCalledTimes(1);
 
   expect(
     await mcp.json(await mcp.request(newRuntime, mcp.toolCall("recovery_probe"))),
