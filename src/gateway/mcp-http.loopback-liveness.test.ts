@@ -16,10 +16,12 @@ vi.mock("node:http", async (importOriginal) => {
   };
 });
 
+// mock-isolation: Hold MCP request handling outside this listener liveness fixture.
 vi.mock("./mcp-http.handlers.js", () => ({
   handleMcpJsonRpc: async () => null,
 }));
 
+// mock-isolation: Replace the cache so recovery can be observed without shared tool state.
 vi.mock("./mcp-http.runtime.js", () => ({
   McpLoopbackToolCache: class {
     clear() {}
@@ -28,6 +30,7 @@ vi.mock("./mcp-http.runtime.js", () => ({
   },
 }));
 
+// mock-isolation: Keep completion lineage admission deterministic while testing listener recovery.
 vi.mock("./tool-resolution-completion.js", () => ({
   assertCompletionGrantLineage() {},
   createCompletionGrantLineageAdmission: () => ({ isCurrent: () => true }),
