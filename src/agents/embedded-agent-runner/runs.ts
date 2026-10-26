@@ -82,6 +82,7 @@ import {
   type EmbeddedRunRegistration,
 } from "./run-state.js";
 import { isEmbeddedRunHandleAbortable, isEmbeddedRunHandleInProgress } from "./runs.probes.js";
+import * as runRegistration from "./runs.registration.js";
 import { normalizeSessionFileRegistryKey } from "./runs.session-index.js";
 import { createEmbeddedRunsTestApi } from "./runs.test-cleanup.js";
 
@@ -918,23 +919,21 @@ export function attachActiveEmbeddedRun(
   const previousAttachment = operation
     ? getControllerEmbeddedAttachment(operation)
     : getDetachedNativeAttachment(sessionId);
-  const wasActive = previousAttachment !== undefined;
+  runRegistration.assertEmbeddedRunRegistrationCanReplace({
+    previousAttachment,
+    operation,
+    previousControllerAttachment: operation
+      ? getSessionControllerEntryForOperation(operation).attachment
+      : undefined,
+    assertRegistrationActive: toolAuthority?.assertRegistrationActive,
+    revokeCompletionClaim: () => revokeCompletionClaim(sessionId, handle.runId, completionTarget),
+  });
   if (previousAttachment) {
-    const previousHandle = previousAttachment.handle;
-    previousAttachment.watchdogAttempt?.close();
-    previousAttachment.closeWatchdogWait?.();
-    previousHandle.closeDiagnostics?.();
-    clearEmbeddedRunAbortability(previousHandle);
-    detachNativeAttempt(previousAttachment);
-    clearActiveEmbeddedRunFiles(previousAttachment);
-    ACTIVE_EMBEDDED_RUN_SNAPSHOTS.delete(previousAttachment);
-    EMBEDDED_RUN_FORCED_TERMINAL_SETTLEMENTS.delete(previousHandle);
-  }
-  try {
-    toolAuthority?.assertRegistrationActive();
-  } catch (error) {
-    revokeCompletionClaim(sessionId, handle.runId, completionTarget);
-    throw error;
+    runRegistration.retirePreviousEmbeddedRunAttachment({
+      attachment: previousAttachment,
+      clearAbortability: clearEmbeddedRunAbortability,
+      clearFiles: clearActiveEmbeddedRunFiles,
+    });
   }
   clearEmbeddedRunAbandonment(
     operation ? getSessionControllerEntryForOperation(operation) : sessionId,
@@ -1046,7 +1045,7 @@ export function attachActiveEmbeddedRun(
   logSessionStateChange({
     ...sessionIdentity,
     state: "processing",
-    reason: wasActive ? "run_replaced" : "run_started",
+    reason: previousAttachment ? "run_replaced" : "run_started",
   });
   markDiagnosticEmbeddedRunStarted({
     sessionId,
