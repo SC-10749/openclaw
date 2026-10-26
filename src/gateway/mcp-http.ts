@@ -594,6 +594,7 @@ async function startMcpLoopbackServer(work: GatewayConnectionWork): Promise<() =
     cleanup();
     if (closeActiveMcpLoopbackServer === close) {
       closeActiveMcpLoopbackServer = undefined;
+      logWarn("mcp-loopback: listener closed unexpectedly; the next run will restart it");
     }
     void work.drain().catch((error: unknown) => {
       logWarn(`mcp-loopback: unexpected server close drain failed: ${String(error)}`);

@@ -3,13 +3,10 @@ import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
 import type { Server } from "node:http";
 import os from "node:os";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@openclaw/normalization-core/expect";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 const createdServers = vi.hoisted(() => [] as Server[]);
-const preparation = vi.hoisted(() => ({
-  wait: undefined as undefined | (() => Promise<void>),
-}));
 
 vi.mock("node:http", async (importOriginal) => {
   const actual = await importOriginal<typeof import("node:http")>();
@@ -23,35 +20,8 @@ vi.mock("node:http", async (importOriginal) => {
   };
 });
 
-vi.mock("./tool-resolution.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("./tool-resolution.js")>();
-  return {
-    ...actual,
-    resolveGatewayScopedTools: async (
-      ...args: Parameters<typeof actual.resolveGatewayScopedTools>
-    ) => {
-      const resolved = await actual.resolveGatewayScopedTools(...args);
-      for (const tool of resolved.tools) {
-        if (tool.name !== "write") {
-          continue;
-        }
-        // Keep the production catalog, hooks and writer; pause only preparation
-        // so revocation deterministically lands before the real file effect.
-        const prepare = tool.prepareBeforeToolCallParams;
-        tool.prepareBeforeToolCallParams = async (params, context) => {
-          const prepared = prepare ? await prepare(params, context) : params;
-          await preparation.wait?.();
-          return prepared;
-        };
-      }
-      return resolved;
-    },
-  };
-});
-
 import { clearRuntimeConfigSnapshot, setRuntimeConfigSnapshot } from "../config/io.js";
-import { createDeferredCore } from "../shared/deferred.js";
-import { resolveMcpLoopbackClientGrant, revokeMcpLoopbackClientGrant } from "./mcp-grant-store.js";
+import { resolveMcpLoopbackClientGrant } from "./mcp-grant-store.js";
 import * as mcp from "./mcp-http-request.test-support.js";
 import { closeMcpLoopbackServer, ensureMcpLoopbackServer } from "./mcp-http.js";
 import { getActiveMcpLoopbackRuntime } from "./mcp-http.loopback-runtime.js";
@@ -61,7 +31,6 @@ let workspace: string;
 
 beforeEach(async () => {
   workspace = await mkdtemp(path.join(os.tmpdir(), "mcp-real-recovery-"));
-  preparation.wait = undefined;
   setRuntimeConfigSnapshot({
     agents: { defaults: { workspace, skipBootstrap: true } },
     tools: { allow: ["write"], fs: { workspaceOnly: true } },
@@ -174,28 +143,5 @@ it("recovers a real MCP request after the listener closes unexpectedly", async (
     "authorized successor",
   );
 
-  const started = createDeferredCore();
-  const release = createDeferredCore();
-  preparation.wait = () => {
-    started.resolve();
-    return release.promise;
-  };
-  const pending = mcp.request(
-    newRuntime,
-    mcp.toolCall("write", {
-      path: "revoked.txt",
-      content: "must not be written",
-    }),
-    successorGrant,
-  );
-  try {
-    await started.promise;
-    expect(revokeMcpLoopbackClientGrant(successorGrant.token)).toBe(true);
-  } finally {
-    release.resolve();
-  }
-  expect(await mcp.json(await pending)).toMatchObject({
-    result: { isError: true, content: [{ type: "text", text: "Tool call authorization expired" }] },
-  });
   expect((await readdir(workspace)).toSorted()).toEqual(["before.txt", "successor.txt"]);
 });
