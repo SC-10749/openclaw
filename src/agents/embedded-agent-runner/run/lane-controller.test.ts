@@ -93,7 +93,7 @@ const replyOperation = (sessionId = "incarnation") =>
 
 function pauseGlobal(
   { controller }: ReturnType<typeof create>,
-  options?: CommandQueueEnqueueOptions,
+  options?: CommandQueueTaskOptions,
   rawFailure?: Error,
 ) {
   const entered = createDeferred();
