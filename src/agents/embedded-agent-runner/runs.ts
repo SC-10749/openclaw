@@ -82,7 +82,6 @@ import {
   type EmbeddedRunRegistration,
 } from "./run-state.js";
 import { isEmbeddedRunHandleAbortable, isEmbeddedRunHandleInProgress } from "./runs.probes.js";
-import * as runRegistration from "./runs.registration.js";
 import { normalizeSessionFileRegistryKey } from "./runs.session-index.js";
 import { createEmbeddedRunsTestApi } from "./runs.test-cleanup.js";
 
@@ -919,21 +918,22 @@ export function attachActiveEmbeddedRun(
   const previousAttachment = operation
     ? getControllerEmbeddedAttachment(operation)
     : getDetachedNativeAttachment(sessionId);
-  runRegistration.assertEmbeddedRunRegistrationCanReplace({
-    previousAttachment,
-    operation,
-    previousControllerAttachment: operation
-      ? getSessionControllerEntryForOperation(operation).attachment
-      : undefined,
-    assertRegistrationActive: toolAuthority?.assertRegistrationActive,
-    revokeCompletionClaim: () => revokeCompletionClaim(sessionId, handle.runId, completionTarget),
-  });
+  try {
+    toolAuthority?.assertRegistrationActive();
+  } catch (error) {
+    revokeCompletionClaim(sessionId, handle.runId, completionTarget);
+    throw error;
+  }
   if (previousAttachment) {
-    runRegistration.retirePreviousEmbeddedRunAttachment({
-      attachment: previousAttachment,
-      clearAbortability: clearEmbeddedRunAbortability,
-      clearFiles: clearActiveEmbeddedRunFiles,
-    });
+    const previousHandle = previousAttachment.handle;
+    previousAttachment.watchdogAttempt?.close();
+    previousAttachment.closeWatchdogWait?.();
+    previousHandle.closeDiagnostics?.();
+    clearEmbeddedRunAbortability(previousHandle);
+    detachNativeAttempt(previousAttachment);
+    clearActiveEmbeddedRunFiles(previousAttachment);
+    ACTIVE_EMBEDDED_RUN_SNAPSHOTS.delete(previousAttachment);
+    EMBEDDED_RUN_FORCED_TERMINAL_SETTLEMENTS.delete(previousHandle);
   }
   clearEmbeddedRunAbandonment(
     operation ? getSessionControllerEntryForOperation(operation) : sessionId,
