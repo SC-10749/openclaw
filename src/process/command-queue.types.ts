@@ -31,13 +31,7 @@ export type CommandQueueTaskDeadline =
   | { kind: "bounded"; deadlineAtMs: number }
   | { kind: "unlimited" };
 
-/**
- * Options accepted by the queue's admission boundary.
- *
- * Keep execution-time timeout controls below this type: direct queue callers
- * can request admission policy, but only the embedded-run controller owns
- * execution timeout handling after a task has been admitted.
- */
+/** Options accepted by the queue's admission boundary. */
 export type CommandQueueAdmissionOptions = {
   sessionTarget?: Readonly<{ agentId?: string; sessionKey?: string; sessionId: string }>;
   /** Enqueue-time provenance for diagnostics only; never used for admission. */
