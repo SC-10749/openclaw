@@ -17,7 +17,7 @@ import {
 import { resetCommandQueueStateForTest } from "../../../process/command-queue.test-support.js";
 import type {
   CommandQueueEnqueueFn,
-  CommandQueueEnqueueOptions,
+  CommandQueueTaskOptions,
 } from "../../../process/command-queue.types.js";
 import { createReplyOperation } from "../../../sessions/session-controller.js";
 import {
@@ -74,7 +74,7 @@ function create(runId: string, overrides: Partial<RunEmbeddedAgentParams> = {}, 
 
 function pauseSession(
   { controller }: ReturnType<typeof create>,
-  options?: CommandQueueEnqueueOptions,
+  options?: CommandQueueTaskOptions,
   resume = async () => controller.throwIfAborted(),
 ) {
   const entered = createDeferred();
