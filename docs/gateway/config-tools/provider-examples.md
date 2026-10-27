@@ -329,5 +329,5 @@ You can represent those routes as two custom providers without changing the runt
 
 The model reference used for a sub-agent is selected in this order: an explicit spawn choice, the per-agent sub-agent model, then `agents.defaults.subagents.model`.
 For cron or automation jobs, set the model and fallback list explicitly when the job must use the background route, for example `openclaw automations add ... --model acme-background/acme-model --fallbacks acme-interactive/acme-model`.
-An existing non-empty `models.json` `baseUrl` takes precedence over the matching config entry, so update that file or remove the override when changing routes.
+When the API transport is unchanged, an existing non-empty `models.json` `baseUrl` takes precedence over the matching config entry, so update that file or remove the override when changing routes.
 See [Sub-agents](/tools/subagents), [Model configuration](/gateway/config-agents/models), [Custom providers and base URLs](/gateway/config-tools/custom-providers), and [Automation payloads](/automation/cron-jobs/payloads) for the detailed selection and precedence rules.
