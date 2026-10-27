@@ -309,19 +309,6 @@ export function createEmbeddedRunLaneController<TParams extends LaneParams>(opti
     options.getParams().preparedRunAdmission?.assertSourceCurrent();
   };
 
-  const withRunLaneWait = (opts?: CommandQueueTaskOptions) => {
-    const params = options.getParams();
-    if (!opts?.onWait && !params.onLaneWait) {
-      return opts;
-    }
-    return {
-      ...opts,
-      onWait: (waitMs, queuedAhead) => {
-        opts?.onWait?.(waitMs, queuedAhead);
-        options.getParams().onLaneWait?.({ waitMs, queuedAhead, waiting: true });
-      },
-    } satisfies CommandQueueTaskOptions;
-  };
   const noteLaneWaitIfBusy = (lane: string) => {
     const params = options.getParams();
     if (!params.onLaneWait) {
