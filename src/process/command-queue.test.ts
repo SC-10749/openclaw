@@ -27,8 +27,13 @@ vi.mock("../logging/diagnostic-runtime.js", () => ({
 }));
 
 type CommandQueueModule = typeof import("./command-queue.js");
-
 let queue: CommandQueueModule;
+
+const assertQueueAdmissionDoesNotAcceptExecutionTimeout = () => {
+  // @ts-expect-error Execution deadlines belong to the embedded-run controller.
+  return queue.enqueueCommandInLane("type-contract", async () => undefined, { taskTimeoutMs: 50 });
+};
+void assertQueueAdmissionDoesNotAcceptExecutionTimeout;
 
 function park<T>(
   lane: string,

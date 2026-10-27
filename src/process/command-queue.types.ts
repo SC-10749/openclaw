@@ -31,7 +31,8 @@ export type CommandQueueTaskDeadline =
   | { kind: "bounded"; deadlineAtMs: number }
   | { kind: "unlimited" };
 
-export type CommandQueueEnqueueOptions = {
+/** Options accepted by the queue's admission boundary. */
+export type CommandQueueAdmissionOptions = {
   sessionTarget?: Readonly<{ agentId?: string; sessionKey?: string; sessionId: string }>;
   /** Enqueue-time provenance for diagnostics only; never used for admission. */
   taskIdentity?: Readonly<{
@@ -52,11 +53,11 @@ export type CommandQueueEnqueueOptions = {
 };
 
 /**
- * Options shared by the embedded run controller while it owns execution
- * deadlines. The command queue must receive only CommandQueueEnqueueOptions;
- * these timeout hooks are consumed after admission by the controller.
+ * Options exposed to embedded-run enqueue callbacks. The timeout hooks remain
+ * part of this exported callback contract because the controller consumes them
+ * after admission; direct queue calls use CommandQueueAdmissionOptions.
  */
-export type CommandQueueTaskOptions = CommandQueueEnqueueOptions & {
+export type CommandQueueEnqueueOptions = CommandQueueAdmissionOptions & {
   taskTimeoutMs?: number;
   taskTimeoutProgressAtMs?: () => number | undefined;
   /** Replaces idle timing with an owner deadline; undefined restores idle timing. */
@@ -68,6 +69,8 @@ export type CommandQueueTaskOptions = CommandQueueEnqueueOptions & {
   /** Ends the task after a caller-owned timeout cleanup grace has already elapsed. */
   taskTimeoutReleaseSignal?: AbortSignal;
 };
+
+export type CommandQueueTaskOptions = CommandQueueEnqueueOptions;
 
 export type CommandQueueEnqueueFn = <T>(
   task: () => Promise<T>,
