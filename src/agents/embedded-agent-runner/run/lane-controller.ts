@@ -24,6 +24,7 @@ import {
 import type {
   CommandQueueEnqueueOptions,
   CommandQueueTaskDeadline,
+  CommandQueueTaskOptions,
 } from "../../../process/command-queue.types.js";
 import { withSessionTurn } from "../../../sessions/session-controller.admission.js";
 import {
@@ -313,7 +314,7 @@ export function createEmbeddedRunLaneController<TParams extends LaneParams>(opti
     options.getParams().preparedRunAdmission?.assertSourceCurrent();
   };
 
-  const withRunLaneWait = (opts?: CommandQueueEnqueueOptions) => {
+  const withRunLaneWait = (opts?: CommandQueueTaskOptions) => {
     const params = options.getParams();
     if (!opts?.onWait && !params.onLaneWait) {
       return opts;
@@ -324,7 +325,7 @@ export function createEmbeddedRunLaneController<TParams extends LaneParams>(opti
         opts?.onWait?.(waitMs, queuedAhead);
         options.getParams().onLaneWait?.({ waitMs, queuedAhead, waiting: true });
       },
-    } satisfies CommandQueueEnqueueOptions;
+    } satisfies CommandQueueTaskOptions;
   };
   const noteLaneWaitIfBusy = (lane: string) => {
     const params = options.getParams();
@@ -342,7 +343,7 @@ export function createEmbeddedRunLaneController<TParams extends LaneParams>(opti
   };
   const enqueueGlobal = async (
     task: () => Promise<EmbeddedAgentRunResult>,
-    opts?: CommandQueueEnqueueOptions,
+    opts?: CommandQueueTaskOptions,
   ) => {
     // Global-lane admission is healthy waiting, not run execution. Keep reply
     // staleness and stuck recovery fenced until this queue grants capacity.
@@ -553,7 +554,7 @@ export function createEmbeddedRunLaneController<TParams extends LaneParams>(opti
   };
   const enqueueAdmittedSession = async <T>(
     task: () => Promise<T>,
-    opts?: CommandQueueEnqueueOptions,
+    opts?: CommandQueueTaskOptions,
   ) => {
     const operation = options.getParams().replyOperation;
     operation?.markWaitingForDeferredMaintenance();
@@ -642,7 +643,7 @@ export function createEmbeddedRunLaneController<TParams extends LaneParams>(opti
     }
   };
 
-  const enqueueSession = async <T>(task: () => Promise<T>, opts?: CommandQueueEnqueueOptions) => {
+  const enqueueSession = async <T>(task: () => Promise<T>, opts?: CommandQueueTaskOptions) => {
     const params = options.getParams();
     // Retain queued context before mailbox admission, not only after a lane starts.
     releaseQueuedRunContext = retainQueuedAgentRunContext(

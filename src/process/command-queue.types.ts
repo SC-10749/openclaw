@@ -48,6 +48,15 @@ export type CommandQueueEnqueueOptions = {
   onQueued?: () => void;
   warnAfterMs?: number;
   onWait?: (waitMs: number, queuedAhead: number) => void;
+  priority?: "foreground" | "normal" | "background";
+};
+
+/**
+ * Options shared by the embedded run controller while it owns execution
+ * deadlines. The command queue must receive only CommandQueueEnqueueOptions;
+ * these timeout hooks are consumed after admission by the controller.
+ */
+export type CommandQueueTaskOptions = CommandQueueEnqueueOptions & {
   taskTimeoutMs?: number;
   taskTimeoutProgressAtMs?: () => number | undefined;
   /** Replaces idle timing with an owner deadline; undefined restores idle timing. */
@@ -58,7 +67,6 @@ export type CommandQueueEnqueueOptions = {
   taskTimeoutAbortGraceMs?: number;
   /** Ends the task after a caller-owned timeout cleanup grace has already elapsed. */
   taskTimeoutReleaseSignal?: AbortSignal;
-  priority?: "foreground" | "normal" | "background";
 };
 
 export type CommandQueueEnqueueFn = <T>(
