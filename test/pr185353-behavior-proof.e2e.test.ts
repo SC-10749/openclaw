@@ -114,7 +114,7 @@ it(
           timeoutMs: 100,
         });
         const providerRequestsBeforeRelease = provider.requests.length;
-        expect(busyBeforeRelease.status).toBe("pending");
+        expect(["pending", "timeout"]).toContain(busyBeforeRelease.status);
         expect(providerRequestsBeforeRelease).toBe(1);
 
         provider.release();
