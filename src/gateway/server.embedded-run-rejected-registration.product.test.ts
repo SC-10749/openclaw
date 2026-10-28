@@ -24,23 +24,24 @@ const firstPrompt = "Hold the predecessor model request until the Gateway stops 
 const registrationRejected = "proof: replacement registration authority rejected";
 
 type Gateway = Awaited<ReturnType<Awaited<ReturnType<typeof createSubagentStopFixture>>["start"]>>;
+type Deferred<T> = ReturnType<typeof createDeferred<T>>;
 
 async function onModelRequest(
   request: IncomingMessage,
   response: ServerResponse,
   body: string,
-  started: ReturnType<typeof createDeferred>,
-  providerStopped: ReturnType<typeof createDeferred>,
+  started: Deferred<void>,
+  providerStopped: Deferred<void>,
   providerRequests: string[],
 ) {
   providerRequests.push(body);
   if (body.includes(firstPrompt)) {
     const closed = createDeferred<void>();
-    request.once("aborted", () => closed.resolve());
-    response.once("close", () => closed.resolve());
-    started.resolve();
+    request.once("aborted", () => closed.resolve(undefined));
+    response.once("close", () => closed.resolve(undefined));
+    started.resolve(undefined);
     await closed.promise;
-    providerStopped.resolve();
+    providerStopped.resolve(undefined);
     return;
   }
   writeOpenAiResponsesText(response, {
@@ -51,8 +52,8 @@ async function onModelRequest(
 }
 
 it("keeps a live Gateway run discoverable after replacement registration is rejected", async () => {
-  const firstModelStarted = createDeferred();
-  const providerStopped = createDeferred();
+  const firstModelStarted = createDeferred<void>();
+  const providerStopped = createDeferred<void>();
   const providerRequests: string[] = [];
   const rejectedRegistrations: string[] = [];
   const model = await startOpenAiResponsesModelServer({
