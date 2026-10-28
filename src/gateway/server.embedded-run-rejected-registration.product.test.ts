@@ -36,7 +36,7 @@ async function onModelRequest(
 ) {
   providerRequests.push(body);
   if (body.includes(firstPrompt)) {
-    const closed = createDeferred<void>();
+    const closed = createDeferred();
     request.once("aborted", () => closed.resolve(undefined));
     response.once("close", () => closed.resolve(undefined));
     started.resolve(undefined);
@@ -52,8 +52,8 @@ async function onModelRequest(
 }
 
 it("keeps a live Gateway run discoverable after replacement registration is rejected", async () => {
-  const firstModelStarted = createDeferred<void>();
-  const providerStopped = createDeferred<void>();
+  const firstModelStarted = createDeferred();
+  const providerStopped = createDeferred();
   const providerRequests: string[] = [];
   const rejectedRegistrations: string[] = [];
   const model = await startOpenAiResponsesModelServer({
