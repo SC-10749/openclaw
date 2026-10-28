@@ -109,6 +109,13 @@ it(
         expect(busy).toMatchObject({ runId: busyRunId, status: "started" });
         const during = await involving();
         expect(during.sessions?.some((row) => row.key === sessionKey)).toBe(false);
+        const busyBeforeRelease = await bob.request<{ status: string }>("agent.wait", {
+          runId: busyRunId,
+          timeoutMs: 100,
+        });
+        const providerRequestsBeforeRelease = provider.requests.length;
+        expect(busyBeforeRelease.status).toBe("pending");
+        expect(providerRequestsBeforeRelease).toBe(1);
 
         provider.release();
         await expect(
@@ -144,6 +151,8 @@ it(
             bobProfileId: bobSelf.profile.id,
             beforeBusy: before.sessions?.map((row) => row.key) ?? [],
             duringBusy: during.sessions?.map((row) => row.key) ?? [],
+            busyBeforeRelease: busyBeforeRelease.status,
+            providerRequestsBeforeRelease,
             afterBusy: after.sessions?.map((row) => row.key) ?? [],
             busyRunId,
             duplicateRunId: duplicate.runId,
