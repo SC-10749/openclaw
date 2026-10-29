@@ -8,12 +8,10 @@ import {
   getActiveNativeAttempt,
   getEmbeddedRunAttachment,
 } from "../agents/embedded-agent-runner/run-state.js";
-import {
-  attachActiveEmbeddedRun,
-  resolveActiveEmbeddedRunOwnerByRunId,
-} from "../agents/embedded-agent-runner/runs.js";
+import { resolveActiveEmbeddedRunOwnerByRunId } from "../agents/embedded-agent-runner/runs.js";
 import { createEmbeddedRunHandle } from "../agents/embedded-agent-runner/runs.test-support.js";
 import { withGatewayToolCallerIdentity } from "../agents/tools/gateway-caller-context.js";
+import { setActiveEmbeddedRun } from "../plugin-sdk/agent-harness-runtime.js";
 import { createSubagentStopFixture } from "./server.subagent-stop-settlement.product.test-support.js";
 import { disconnectGatewayClient } from "./test-helpers.e2e.js";
 
@@ -121,15 +119,10 @@ it("keeps a live Gateway run discoverable after replacement registration is reje
             };
           },
         },
+        // Use the shipped harness registration boundary; the authority callback
+        // is the isolated fault injector for the real Gateway run above.
         () =>
-          attachActiveEmbeddedRun(
-            originalOwner.sessionId,
-            replacement,
-            sessionKey,
-            undefined,
-            "main",
-            operation,
-          ),
+          setActiveEmbeddedRun(originalOwner.sessionId, replacement, sessionKey, undefined, "main"),
       ),
     ).rejects.toThrow(registrationRejected);
 
